@@ -1,4 +1,3 @@
-const hide = require('hide-secrets');
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
 
@@ -7,6 +6,21 @@ const db = mysql.createConnection({
     user: 'root',
     password: '',
     database: 'employee_db'
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('Error connecting to the database:', err);
+        return;
+    }
+
+    console.log('Connected to the database');
+
+    startInquirer();
+});
+
+db.on('error', (err) => {
+    console.error('Database connection error:', err);
 });
 
 function startInquirer() {
@@ -146,3 +160,7 @@ function updateEmployeeRole() {
         startInquirer();
     });
 }
+
+process.on('exit', () => {
+    db.end();
+});
