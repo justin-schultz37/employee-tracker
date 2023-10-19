@@ -113,12 +113,20 @@ function addEmployee() {
 }
 
 function addDepartment() {
-    const query = `SELECT * FROM department`;
-    db.query(query, (error, res) => {
-        if (error) throw error;
-        console.table(res);
-        startInquirer();
-    });
+    inquirer
+        .prompt({
+            type: 'input',
+            message: 'Enter the name of the department:',
+            name: 'dept_name',
+        })
+        .then((answer) => {
+            const query = 'INSERT INTO department (dept_name) VALUES (?)';
+            db.query(query, [answer.dept_name], (error, res) => {
+                if (error) throw error;
+                console.log(`Added department: ${answer.dept_name}`);
+                startInquirer();
+            });
+        });
 }
 
 function addRole() {
