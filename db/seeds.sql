@@ -16,10 +16,10 @@ VALUES
     (5, "Chief Financial Officer", 200000, 5);
 
 -- Insert seed data into the 'employees' table
-INSERT INTO employees (first_name, last_name, role_id, manager_id)
+INSERT INTO employees (first_name, last_name, role_id)
 VALUES
-    ("Justin", "Schultz", 1, 100),
-    ("Jack", "Sanogo", 2, 200),
-    ("Arlin", "Lemmon", 3, 300),
-    ("Juanda", "Pool", 4, 400),
-    ("Jaime", "George", 5, 500);
+    ("Justin", "Schultz", 1),
+    ("Jack", "Sanogo", 2),
+    ("Arlin", "Lemmon", 3),
+    ("Juanda", "Pool", 4),
+    ("Jaime", "George", 5);
