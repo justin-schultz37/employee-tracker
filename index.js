@@ -1,8 +1,9 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
 require('dotenv').config();
+const { exec } = require('child_process');
 
-// Create a database connection
+// Create a database connection using variables
 const db = mysql.createConnection({
     host: 'localhost',
     user: process.env.DB_USER,
@@ -17,7 +18,7 @@ db.connect((err) => {
         return;
     }
     console.log('Connected to the database');
-    startInquirer();
+    startInquirer(); // Start the main inquirer menu
 });
 
 // Handle database connection errors
@@ -43,16 +44,17 @@ function startInquirer() {
                 'Quit'
             ]
         })
+        // Switch stament that calls different functions depending on what the user chooses
         .then((answer) => {
             switch (answer.start) {
                 case 'View all Departments':
-                    viewAll('department');
+                    viewAllDepartments();
                     break;
                 case 'View all Employees':
-                    viewAll('employees');
+                    viewAllEmployee();
                     break;
                 case 'View all Roles':
-                    viewAll('roles');
+                    viewAllRoles();
                     break;
                 case 'Add Department':
                     addDepartment();
@@ -67,21 +69,62 @@ function startInquirer() {
                     updateEmployeeRole();
                     break;
                 case 'Quit':
-                    console.log('Goodbye!');
-                    process.exit(0);
+                    runQuitScripts();
+                    break;
             }
         });
 }
 
-// Generic function to view all records of a specific table
-function viewAll(table) {
-    const query = `SELECT * FROM ${table}`;
+// Function to view all departments
+function viewAllDepartments() {
+    const query = `SELECT * FROM department`;
     db.query(query, (error, res) => {
-        if (error) {
-            console.error(`Error viewing ${table}:`, error);
-        } else {
-            console.table(res);
-        }
+        if (error) throw error;
+        console.table(res);
+        startInquirer();
+    });
+}
+
+// Function that grabs elements from the employee table and joins them on the roles table to return a custom query from the database
+function viewAllEmployee() {
+    const query =
+        `SELECT
+            employees.id AS employee_id,
+            employees.first_name,
+            employees.last_name,
+            roles.title AS job_title,
+            roles.salary
+        FROM
+            employees
+        JOIN
+            roles
+        ON
+            employees.role_id = roles.id;
+        `;
+    db.query(query, (error, res) => {
+        if (error) throw error;
+        console.table(res);
+        startInquirer();
+    });
+}
+
+// Function that grabs data from the roles table and combines it with the department table to create a custom query.
+function viewAllRoles() {
+    const query =
+        `SELECT
+            roles.id AS role_id,
+            roles.title AS job_title,
+            department.dept_name AS department,
+            roles.salary
+        FROM
+            roles
+        JOIN
+            department
+        ON
+            roles.dept_id = department.id;`;
+    db.query(query, (error, res) => {
+        if (error) throw error;
+        console.table(res);
         startInquirer();
     });
 }
@@ -101,8 +144,8 @@ function addDepartment() {
                     console.error('Error adding department:', error);
                 } else {
                     console.log(`Added department: ${answer.dept_name}`);
+                    startInquirer();
                 }
-                startInquirer();
             });
         });
 }
@@ -136,14 +179,15 @@ function addRole() {
                     console.error('Error adding role:', error);
                 } else {
                     console.log(`Role added successfully! Role ID: ${result.insertId}`);
+                    startInquirer();
                 }
-                startInquirer();
             });
         });
 }
 
 // Function to add an employee
 function addEmployee() {
+    // Prompt for employee information
     inquirer
         .prompt([
             {
@@ -171,13 +215,12 @@ function addEmployee() {
                     console.error('Error adding employee:', error);
                 } else {
                     console.log(`Employee added successfully! Employee ID: ${result.insertId}`);
+                    startInquirer();
                 }
-                startInquirer();
             });
         });
 }
 
-// Function to update an employee's role
 function updateEmployeeRole() {
     inquirer
         .prompt([
@@ -198,20 +241,45 @@ function updateEmployeeRole() {
 
             db.query(query, values, (error, result) => {
                 if (error) {
-                    console.error('Error updating employee role:', error);
+                    console.error('Error updating employee:', error);
                 } else {
                     if (result.affectedRows === 0) {
                         console.log('Employee not found or role not updated.');
                     } else {
-                        console.log(`Employee role updated successfully!`);
+                        console.log('Employee role updated successfully!');
                     }
+                    startInquirer();
                 }
-                startInquirer();
             });
         });
 }
 
-// Handle the program exit
-process.on('exit', () => {
-    db.end();
-});
+// Function to run the quit scripts
+function runQuitScripts() {
+    console.log('Running Quit scripts...');
+
+    // Run schema.sql
+    const schemaCommand = `mysql -u${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${process.env.DB_NAME} < ./db/schema.sql`;
+
+    const schemaProcess = exec(schemaCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error('Error executing schema.sql:', error);
+        } else {
+            console.log('schema.sql executed successfully');
+
+            // Run seeds.sql
+            const seedsCommand = `mysql -u${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${process.env.DB_NAME} < ./db/seeds.sql`;
+
+            const seedsProcess = exec(seedsCommand, (error, stdout, stderr) => {
+                if (error) {
+                    console.error('Error executing seeds.sql:', error);
+                } else {
+                    console.log('seeds.sql executed successfully');
+                }
+                console.log('Goodbye!');
+                process.exit(0);
+            });
+        }
+    });
+}
+
