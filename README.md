@@ -3,7 +3,7 @@
 ## Description
 Employee Tracking CMS is a content management system that allows a user to interact with a database. These actions include being able to view and add data by department, employee role, and employees. The application also has a feature to reset and re-seed the database when the Quit option is selected.
 
-![Article Preview](./Images/content-management-menu.png)
+![Article Preview](./Assets/content-management-menu.png)
     
 ## Installation
 <p>npm install inquirer@8.2.4</p>
